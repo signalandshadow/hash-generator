@@ -740,9 +740,13 @@
   /* When loaded with ?embed=1 (or in an iframe inside signalandshadow.io)
      hide chrome that the parent page already provides. */
   body.embed .status-bar,
-  body.embed .hero,
   body.embed footer.page-foot {
     display: none;
+  }
+  body.embed .hero {
+    /* Tighten hero spacing slightly when embedded; hero stays visible. */
+    padding-top: 40px;
+    padding-bottom: 36px;
   }
   body.embed main {
     padding: 24px 0 32px;
