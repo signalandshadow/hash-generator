@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hash Generator · Signal &amp; Shadow</title>
+<meta name="description" content="Generate SHA-256 hard bindings and pHash soft bindings for files, text, and URLs. Output formatted for chain-of-custody citation. All hashing runs client-side.">
+<meta property="og:title" content="Hash Generator · Signal &amp; Shadow">
+<meta property="og:description" content="Generate SHA-256 hard bindings and pHash soft bindings for files, text, and URLs. Output formatted for chain-of-custody citation. All hashing runs client-side.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Surface */
+    --bg: #0A0E14;
+    --bg-elev: #0F141C;
+    --bg-card: #131923;
+    --bg-card-hover: #18202D;
+    --line: #1F2937;
+    --line-bright: #2D3B4F;
+
+    /* Ink */
+    --ink: #E8EBF0;
+    --ink-soft: #B0B8C5;
+    --ink-faint: #6B7888;
+    --ink-mute: #4A5564;
+
+    /* Brand */
+    --navy: #2A1B3D;
+    --teal: #32BB93;
+    --teal-bright: #4DD9AE;
+    --teal-deep: #1F8F6E;
+    --teal-tint: rgba(50, 187, 147, 0.12);
+    --teal-glow: rgba(50, 187, 147, 0.15);
+
+    /* Status */
+    --amber: #E89D3C;
+    --rust: #C24914;
+    --vermillion: #D14242;
+
+    /* Type */
+    --sans: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, Menlo, 'Courier New', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  a { color: inherit; text-decoration: none; transition: color 0.15s; }
+  a:hover { color: var(--teal); }
+
+  button { font-family: inherit; cursor: pointer; background: none; border: none; color: inherit; padding: 0; }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
+
+  /* ============ STATUS BAR ============ */
+  .status-bar {
+    background: var(--bg-elev);
+    border-bottom: 0.5px solid var(--line);
+    padding: 10px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .status-bar .row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 24px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+  }
+  .status-id { color: var(--teal); font-weight: 600; letter-spacing: 0.16em; }
+  .status-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .dot-sep { color: var(--ink-mute); }
+  .status-pulse {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-pulse .pill-local {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    background: var(--teal-tint);
+    border: 1px solid var(--teal-deep);
+    color: var(--teal);
+    font-weight: 600;
+    letter-spacing: 0.14em;
+  }
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--teal);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--teal);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ============ HERO ============ */
+  .hero {
+    padding: 64px 0 48px;
+    border-bottom: 0.5px solid var(--line);
+  }
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: var(--teal);
+  }
+  .hero-headline {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: clamp(36px, 5vw, 56px);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    max-width: 900px;
+    margin-bottom: 24px;
+  }
+  .hero-headline em {
+    font-style: normal;
+    color: var(--teal);
+    font-weight: 600;
+  }
+  .hero-deck {
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: 700px;
+    margin-bottom: 28px;
+  }
+  .hero-note {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    line-height: 1.6;
+    max-width: 680px;
+    padding: 12px 16px;
+    border-left: 2px solid var(--teal);
+    background: var(--teal-tint);
+  }
+  .hero-note strong { color: var(--teal); font-weight: 600; }
+
+  /* ============ MAIN LAYOUT ============ */
+  main {
+    padding: 48px 0 64px;
+  }
+  .tool-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 32px;
+  }
+  @media (max-width: 900px) {
+    .tool-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ============ SECTION HEAD ============ */
+  .section-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+    border-bottom: 0.5px solid var(--line);
+  }
+  .section-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--teal);
+    font-weight: 600;
+  }
+  .section-heading {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .section-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    text-align: right;
+  }
+  @media (max-width: 600px) {
+    .section-head { grid-template-columns: 1fr; gap: 8px; }
+    .section-meta { text-align: left; }
+  }
+
+  /* ============ MODE TABS ============ */
+  .mode-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 0;
+    border: 0.5px solid var(--line);
+    border-bottom: none;
+  }
+  .mode-tab {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 500;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    color: var(--ink-faint);
+    border: none;
+    border-right: 0.5px solid var(--line);
+    transition: background 0.15s, color 0.15s;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .mode-tab:last-child { border-right: none; }
+  .mode-tab:hover:not(.active) {
+    background: var(--bg-card-hover);
+    color: var(--ink-soft);
+  }
+  .mode-tab.active {
+    background: var(--bg-elev);
+    color: var(--teal);
+    position: relative;
+  }
+  .mode-tab.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--teal);
+  }
+  .mode-tab .tab-num {
+    font-size: 9px;
+    color: var(--ink-mute);
+    letter-spacing: 0.16em;
+  }
+  .mode-tab.active .tab-num { color: var(--teal-deep); }
+
+  /* ============ INPUT PANEL ============ */
+  .panel {
+    background: var(--bg-card);
+    border: 0.5px solid var(--line);
+    padding: 24px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .panel-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .panel-hint {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+    margin-bottom: 18px;
+    max-width: 580px;
+  }
+
+  /* ============ DROP ZONE ============ */
+  .drop-zone {
+    border: 1px dashed var(--line-bright);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--teal);
+    background: var(--teal-tint);
+  }
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+  .drop-icon {
+    width: 36px;
+    height: 36px;
+    margin: 0 auto 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--teal);
+  }
+  .drop-text {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .drop-hint {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+  }
+
+  .file-selected {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--teal-tint);
+    border: 0.5px solid var(--teal-deep);
+    margin-top: 16px;
+  }
+  .file-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--teal);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+  }
+  .file-size {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-soft);
+    letter-spacing: 0.08em;
+  }
+
+  /* ============ TEXT/URL INPUTS ============ */
+  textarea, input[type="url"], input[type="text"] {
+    width: 100%;
+    background: var(--bg);
+    border: 0.5px solid var(--line);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    padding: 14px 16px;
+    transition: border-color 0.15s;
+    outline: none;
+    resize: vertical;
+    line-height: 1.6;
+  }
+  textarea:focus, input[type="url"]:focus, input[type="text"]:focus {
+    border-color: var(--teal);
+  }
+  textarea::placeholder, input::placeholder {
+    color: var(--ink-mute);
+  }
+
+  /* ============ ERROR ============ */
+  .error-msg {
+    background: rgba(209, 66, 66, 0.08);
+    border: 0.5px solid rgba(209, 66, 66, 0.4);
+    color: var(--vermillion);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  /* ============ GENERATE BUTTON ============ */
+  .generate-btn {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 600;
+    padding: 16px 24px;
+    background: var(--teal);
+    color: var(--bg);
+    border: 1px solid var(--teal);
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  .generate-btn:hover:not(:disabled) {
+    background: var(--teal-bright);
+    border-color: var(--teal-bright);
+    box-shadow: 0 0 24px var(--teal-glow);
+  }
+  .generate-btn:disabled {
+    background: transparent;
+    color: var(--ink-mute);
+    border-color: var(--line);
+    cursor: not-allowed;
+  }
+
+  /* ============ LOADING ============ */
+  .loading {
+    text-align: center;
+    padding: 64px 24px;
+    border: 0.5px solid var(--line);
+    background: var(--bg-card);
+  }
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 1.5px solid var(--line-bright);
+    border-top-color: var(--teal);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--teal);
+  }
+
+  /* ============ RESULTS ============ */
+  .source-info {
+    background: var(--bg-card);
+    border: 0.5px solid var(--line);
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .source-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 0.5px solid var(--line);
+  }
+  .source-row:last-child { border-bottom: none; }
+  .source-key {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .source-val {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+    word-break: break-all;
+    letter-spacing: 0.02em;
+  }
+  @media (max-width: 600px) {
+    .source-row { grid-template-columns: 1fr; gap: 2px; }
+    .source-key { color: var(--teal); }
+  }
+
+  .result-card {
+    background: var(--bg-card);
+    border: 0.5px solid var(--line);
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .result-card.hard::before,
+  .result-card.hard::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: var(--teal);
+    border-style: solid;
+    pointer-events: none;
+  }
+  .result-card.hard::before {
+    top: -1px; left: -1px;
+    border-width: 1px 0 0 1px;
+  }
+  .result-card.hard::after {
+    bottom: -1px; right: -1px;
+    border-width: 0 1px 1px 0;
+  }
+
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 18px;
+    border-bottom: 0.5px solid var(--line);
+    background: var(--bg-elev);
+    gap: 12px;
+  }
+  .result-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--teal);
+    font-weight: 600;
+  }
+  .result-sublabel {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-top: 4px;
+  }
+  .copy-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 0.5px solid var(--line-bright);
+    color: var(--ink-soft);
+    padding: 6px 12px;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    font-weight: 500;
+  }
+  .copy-btn:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+    background: var(--teal-tint);
+  }
+  .copy-btn.copied {
+    color: var(--teal);
+    border-color: var(--teal);
+    background: var(--teal-tint);
+  }
+
+  .hash-value {
+    padding: 16px 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink);
+    word-break: break-all;
+    line-height: 1.7;
+    letter-spacing: 0.02em;
+  }
+  .hash-value.na {
+    color: var(--ink-mute);
+    font-style: normal;
+    font-size: 11px;
+  }
+
+  /* ============ CITATION BLOCK ============ */
+  .citation-wrap {
+    background: var(--bg);
+    border: 0.5px solid var(--line);
+    margin-top: 24px;
+    margin-bottom: 24px;
+  }
+  .citation-body {
+    padding: 18px 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.8;
+    color: var(--ink);
+    white-space: pre-wrap;
+    word-break: break-all;
+    letter-spacing: 0.02em;
+  }
+  .citation-body .key { color: var(--ink-faint); }
+  .citation-body .val { color: var(--teal); }
+
+  /* ============ RESET BUTTON ============ */
+  .reset-row {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 0.5px solid var(--line);
+  }
+  .btn-ghost {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 500;
+    padding: 12px 20px;
+    background: transparent;
+    color: var(--ink);
+    border: 0.5px solid var(--line-bright);
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-ghost:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+  }
+
+  /* ============ SIDEBAR ============ */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .side-card {
+    background: var(--bg-card);
+    border: 0.5px solid var(--line);
+    padding: 18px 20px;
+    position: relative;
+  }
+  .side-card.bracket {
+    border-color: var(--line-bright);
+  }
+  .side-card.bracket::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: -1px;
+    width: 10px; height: 10px;
+    border-top: 1px solid var(--teal);
+    border-left: 1px solid var(--teal);
+  }
+  .side-card.bracket::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; right: -1px;
+    width: 10px; height: 10px;
+    border-bottom: 1px solid var(--teal);
+    border-right: 1px solid var(--teal);
+  }
+  .side-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--teal);
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid var(--line);
+    font-weight: 600;
+  }
+  .side-card h4 {
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    line-height: 1.25;
+  }
+  .side-card p {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin-bottom: 0;
+  }
+  .side-card .side-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .side-card .side-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 0.5px solid var(--line);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+  }
+  .side-card .side-list li:last-child { border-bottom: none; }
+  .side-card .side-list li .v { color: var(--teal); font-weight: 600; }
+
+  .side-card a.side-link {
+    display: inline-block;
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--teal);
+    border-bottom: 1px solid var(--teal);
+    padding-bottom: 1px;
+    font-weight: 500;
+  }
+
+  /* ============ FOOTER ============ */
+  footer.page-foot {
+    border-top: 0.5px solid var(--line);
+    padding: 32px 0;
+    margin-top: 40px;
+    background: var(--bg-elev);
+  }
+  .foot-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    justify-content: center;
+  }
+  .foot-line .accent { color: var(--teal); font-weight: 600; }
+
+  /* ============ EMBED MODE ============ */
+  /* When loaded with ?embed=1 (or in an iframe inside signalandshadow.io)
+     hide chrome that the parent page already provides. */
+  body.embed .status-bar,
+  body.embed .hero,
+  body.embed footer.page-foot {
+    display: none;
+  }
+  body.embed main {
+    padding: 24px 0 32px;
+  }
+  body.embed {
+    background: transparent;
+  }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 900px) {
+    .wrap { padding: 0 20px; }
+    .hero { padding: 48px 0 36px; }
+    .hero-deck { font-size: 15px; }
+    main { padding: 32px 0 48px; }
+  }
+  @media (max-width: 600px) {
+    .wrap { padding: 0 16px; }
+    .hero { padding: 36px 0 28px; }
+    .status-bar .row { grid-template-columns: 1fr; gap: 8px; }
+    .status-meta { flex-wrap: wrap; gap: 6px; }
+    .mode-tabs { flex-direction: column; }
+    .mode-tab { border-right: none; border-bottom: 0.5px solid var(--line); }
+    .mode-tab:last-child { border-bottom: none; }
+    .panel { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ STATUS BAR ============ -->
+<section class="status-bar">
+  <div class="wrap row">
+    <span class="status-id">[ S&amp;S / OPS ]</span>
+    <div class="status-meta">
+      <span>SIG-HSH-001</span>
+      <span class="dot-sep">·</span>
+      <span>v0.1</span>
+      <span class="dot-sep">·</span>
+      <span>Verified 2026-05-04</span>
+      <span class="dot-sep">·</span>
+      <span>by DB</span>
+    </div>
+    <div class="status-pulse">
+      <span class="pill-local"><span class="pulse-dot"></span>CLIENT-SIDE</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-eyebrow">
+      <span>Signal &amp; Shadow / Workshop</span>
+    </div>
+    <h1 class="hero-headline">
+      Hash a file. <em>Cite the fingerprint.</em>
+    </h1>
+    <p class="hero-deck">
+      Generate SHA-256 hard bindings and pHash soft bindings for files, text, and URLs. Output is formatted for direct paste into MIP Analyser reports and SS-DOSSIER chain-of-custody sections.
+    </p>
+    <div class="hero-note">
+      <strong>Client-side only.</strong> All hashing runs in your browser. No file, text, or URL content is transmitted to any server. Safe for sensitive source material.
+    </div>
+  </div>
+</header>
+
+<!-- ============ MAIN ============ -->
+<main>
+  <div class="wrap tool-grid">
+
+    <section class="primary">
+      <div class="section-head">
+        <span class="section-tag">Tool · 01</span>
+        <h2 class="section-heading">Hash generator</h2>
+        <span class="section-meta">SHA-256 · pHash · BLAKE</span>
+      </div>
+
+      <div id="app">
+        <!-- populated by JS -->
+      </div>
+    </section>
+
+    <aside class="sidebar">
+
+      <div class="side-card bracket">
+        <div class="side-label">Output bindings</div>
+        <h4>Two fingerprints, two purposes.</h4>
+        <p style="margin-bottom: 14px;">SHA-256 confirms exact identity. Any single bit changed produces a completely different hash.</p>
+        <p>pHash measures perceptual similarity for images. Survives recompression, minor crops, and resizing. Diverges under heavy edits.</p>
+      </div>
+
+      <div class="side-card">
+        <div class="side-label">Specification</div>
+        <ul class="side-list">
+          <li><span>SHA-256</span><span class="v">256 bit</span></li>
+          <li><span>pHash</span><span class="v">256 bit DCT</span></li>
+          <li><span>Source proxy</span><span class="v">allorigins</span></li>
+          <li><span>Schema</span><span class="v">v1</span></li>
+        </ul>
+      </div>
+
+      <div class="side-card">
+        <div class="side-label">Used in</div>
+        <h4>Chain-of-custody documentation.</h4>
+        <p>Output paste-ready for MIP Analyser reports, SS-DOSSIER sections, and any methodology card requiring a verified source fingerprint.</p>
+        <a href="https://signalandshadow.io/mip-analyser" class="side-link">MIP Analyser →</a>
+      </div>
+
+      <div class="side-card">
+        <div class="side-label">Standard</div>
+        <h4>LST-001 v1.0.3.</h4>
+        <p>House editorial standard governs every line of output and the format of the citation block.</p>
+        <a href="https://signalandshadow.io/verification-standards" class="side-link">View standards →</a>
+      </div>
+
+    </aside>
+  </div>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="page-foot">
+  <div class="wrap">
+    <div class="foot-line">
+      <span class="accent">[ S&amp;S / OPS ]</span>
+      <span>·</span>
+      <span>SIG-HSH-001 v0.1</span>
+      <span>·</span>
+      <span>Verified 2026-05-04 by DB</span>
+      <span>·</span>
+      <span>LST-001 v1.0.3</span>
+      <span>·</span>
+      <span>Set in Geist and JetBrains Mono</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ============ EMBED MODE ============
+// Detect ?embed=1 or being loaded inside an iframe on signalandshadow.io.
+// Hides status bar, hero, and footer; posts height to parent for auto-resize.
+(function setupEmbedMode() {
+  const params = new URLSearchParams(window.location.search);
+  const explicitEmbed = params.get('embed') === '1';
+  const iframed = window.parent !== window;
+  if (explicitEmbed || iframed) {
+    document.body.classList.add('embed');
+  }
+
+  if (iframed) {
+    function sendHeight() {
+      const h = Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.offsetHeight
+      );
+      window.parent.postMessage({ type: 'ss-hash-generator-height', height: h }, '*');
+    }
+    if (window.ResizeObserver) {
+      new ResizeObserver(sendHeight).observe(document.body);
+    }
+    window.addEventListener('load', sendHeight);
+    setInterval(sendHeight, 1000);
+  }
+})();
+
+let state = {
+  mode: 'file',
+  file: null,
+  text: '',
+  url: '',
+  results: null,
+  loading: false,
+  error: null,
+};
+
+function render() {
+  const app = document.getElementById('app');
+  if (state.loading) {
+    app.innerHTML = `
+      <div class="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Generating hashes</div>
+      </div>
+    `;
+    return;
+  }
+  if (state.results) {
+    renderResults(app);
+    return;
+  }
+  renderInput(app);
+}
+
+function renderInput(app) {
+  const canGenerate =
+    (state.mode === 'file' && state.file) ||
+    (state.mode === 'text' && state.text.trim()) ||
+    (state.mode === 'url' && state.url.trim());
+
+  let panelHtml = '';
+
+  if (state.mode === 'file') {
+    panelHtml = `
+      <div class="panel">
+        <div class="panel-label">File input</div>
+        <div class="panel-hint">Upload any file. SHA-256 is generated for all file types. pHash is generated for image files (JPEG, PNG, GIF, WebP) only.</div>
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" onchange="handleFile(this.files[0])">
+          <div class="drop-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="drop-text">Drop file here or click to browse</div>
+          <div class="drop-hint">Any file type. Images, video, documents, archives.</div>
+        </div>
+        ${state.file ? `
+          <div class="file-selected">
+            <span class="file-name">${escapeHtml(state.file.name)}</span>
+            <span class="file-size">${formatSize(state.file.size)}</span>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  } else if (state.mode === 'text') {
+    panelHtml = `
+      <div class="panel">
+        <div class="panel-label">Text input</div>
+        <div class="panel-hint">Hash any string. A source statement, a URL you have archived, a case note, or a timestamp string. SHA-256 only. pHash is not applicable to text.</div>
+        <textarea rows="6" placeholder="Enter text to hash..." oninput="state.text = this.value; refreshBtn()">${escapeHtml(state.text)}</textarea>
+      </div>
+    `;
+  } else if (state.mode === 'url') {
+    panelHtml = `
+      <div class="panel">
+        <div class="panel-label">URL input</div>
+        <div class="panel-hint">Paste a URL. The tool fetches the page content via a CORS proxy and hashes the response body. Archive the URL independently before hashing. This tool does not archive. SHA-256 only.</div>
+        <input type="url" placeholder="https://..." value="${escapeHtml(state.url)}" oninput="state.url = this.value; refreshBtn()" onpaste="setTimeout(()=>{state.url=this.value;refreshBtn()},0)">
+      </div>
+    `;
+  }
+
+  app.innerHTML = `
+    <div class="mode-tabs">
+      <button class="mode-tab ${state.mode === 'file' ? 'active' : ''}" onclick="setMode('file')">
+        <span class="tab-num">01</span><span>File</span>
+      </button>
+      <button class="mode-tab ${state.mode === 'text' ? 'active' : ''}" onclick="setMode('text')">
+        <span class="tab-num">02</span><span>Text</span>
+      </button>
+      <button class="mode-tab ${state.mode === 'url' ? 'active' : ''}" onclick="setMode('url')">
+        <span class="tab-num">03</span><span>URL</span>
+      </button>
+    </div>
+    ${panelHtml}
+    ${state.error ? `<div class="error-msg">${escapeHtml(state.error)}</div>` : ''}
+    <button class="generate-btn" id="generateBtn" onclick="generate()" ${!canGenerate ? 'disabled' : ''}>
+      Generate hashes →
+    </button>
+  `;
+
+  if (state.mode === 'file') {
+    setupDragDrop();
+  }
+}
+
+function renderResults(app) {
+  const r = state.results;
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0];
+  const timeStr = now.toTimeString().slice(0,5) + ' UTC';
+
+  const isImage = r.isImage;
+  const pHashDisplay = isImage ? (r.phash || 'pHash generation failed. Verify manually.') : 'Not applicable. Text or non-image input.';
+
+  const dashLine = '─'.repeat(50);
+  const citationText =
+`CHAIN OF CUSTODY · HASH RECORD
+${dashLine}
+Source type:   ${r.sourceType}
+Source:        ${r.sourceName}
+Generated:     ${dateStr} ${timeStr}
+${dashLine}
+SHA-256:       ${r.sha256}
+pHash:         ${pHashDisplay}
+${dashLine}
+Signal & Shadow Hash Generator · signalandshadow.io
+All hashing performed client-side. No data transmitted.`;
+
+  app.innerHTML = `
+    <div class="results">
+
+      <div class="source-info">
+        <div class="source-row"><span class="source-key">Source type</span><span class="source-val">${escapeHtml(r.sourceType)}</span></div>
+        <div class="source-row"><span class="source-key">Source</span><span class="source-val">${escapeHtml(r.sourceName)}</span></div>
+        <div class="source-row"><span class="source-key">Generated</span><span class="source-val">${dateStr} ${timeStr}</span></div>
+        ${r.fileSize ? `<div class="source-row"><span class="source-key">File size</span><span class="source-val">${escapeHtml(r.fileSize)}</span></div>` : ''}
+        ${r.fileType ? `<div class="source-row"><span class="source-key">File type</span><span class="source-val">${escapeHtml(r.fileType)}</span></div>` : ''}
+      </div>
+
+      <div class="result-card hard">
+        <div class="result-header">
+          <div>
+            <div class="result-label">SHA-256 · Hard binding</div>
+            <div class="result-sublabel">Exact file or content match</div>
+          </div>
+          <button class="copy-btn" onclick="copyText('${r.sha256}', this)">Copy</button>
+        </div>
+        <div class="hash-value">${r.sha256}</div>
+      </div>
+
+      <div class="result-card">
+        <div class="result-header">
+          <div>
+            <div class="result-label">pHash · Soft binding</div>
+            <div class="result-sublabel">Perceptual similarity. Images only.</div>
+          </div>
+          ${isImage && r.phash ? `<button class="copy-btn" onclick="copyText('${r.phash}', this)">Copy</button>` : ''}
+        </div>
+        <div class="hash-value ${!isImage || !r.phash ? 'na' : ''}">${pHashDisplay}</div>
+      </div>
+
+      <div class="citation-wrap">
+        <div class="result-header">
+          <span class="result-label">Chain of custody block</span>
+          <button class="copy-btn" id="citeCopyBtn" onclick="copyCitation(this)">Copy block</button>
+        </div>
+        <div class="citation-body" id="citationBody"><span class="key">CHAIN OF CUSTODY · HASH RECORD
+${dashLine}
+Source type:   </span><span class="val">${escapeHtml(r.sourceType)}</span>
+<span class="key">Source:        </span><span class="val">${escapeHtml(r.sourceName)}</span>
+<span class="key">Generated:     </span>${dateStr} ${timeStr}
+<span class="key">${dashLine}
+SHA-256:       </span><span class="val">${r.sha256}</span>
+<span class="key">pHash:         </span><span class="val">${pHashDisplay}</span>
+<span class="key">${dashLine}
+Signal &amp; Shadow Hash Generator · signalandshadow.io</span></div>
+      </div>
+
+      <div class="reset-row">
+        <button class="btn-ghost" onclick="resetTool()">← Hash another</button>
+      </div>
+    </div>
+  `;
+
+  // Stash citation text for copy button
+  window._citationText = citationText;
+}
+
+function copyCitation(btn) {
+  copyText(window._citationText || '', btn);
+}
+
+function setMode(mode) {
+  state.mode = mode;
+  state.error = null;
+  render();
+}
+
+function refreshBtn() {
+  const btn = document.getElementById('generateBtn');
+  if (!btn) return;
+  const canGenerate =
+    (state.mode === 'file' && state.file) ||
+    (state.mode === 'text' && state.text.trim()) ||
+    (state.mode === 'url' && state.url.trim());
+  btn.disabled = !canGenerate;
+}
+
+function handleFile(file) {
+  if (!file) return;
+  state.file = file;
+  state.error = null;
+  render();
+}
+
+function setupDragDrop() {
+  const zone = document.getElementById('dropZone');
+  if (!zone) return;
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(2) + ' MB';
+}
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+async function sha256Buffer(buffer) {
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function sha256String(str) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  return sha256Buffer(data);
+}
+
+async function computePHash(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      try {
+        const SIZE = 32;
+        const canvas = document.createElement('canvas');
+        canvas.width = SIZE;
+        canvas.height = SIZE;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, SIZE, SIZE);
+        const data = ctx.getImageData(0, 0, SIZE, SIZE).data;
+        const grayscale = [];
+        for (let i = 0; i < SIZE * SIZE; i++) {
+          const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+          grayscale.push(0.299 * r + 0.587 * g + 0.114 * b);
+        }
+        const mean = grayscale.reduce((a, b) => a + b, 0) / grayscale.length;
+        const bits = grayscale.map(v => v >= mean ? 1 : 0);
+        let hex = '';
+        for (let i = 0; i < bits.length; i += 4) {
+          const nibble = (bits[i] << 3) | (bits[i+1] << 2) | (bits[i+2] << 1) | bits[i+3];
+          hex += nibble.toString(16);
+        }
+        URL.revokeObjectURL(url);
+        resolve(hex);
+      } catch (e) {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    img.src = url;
+  });
+}
+
+function isImageFile(file) {
+  return file && file.type && file.type.startsWith('image/');
+}
+
+async function generate() {
+  state.error = null;
+  state.loading = true;
+  render();
+
+  try {
+    if (state.mode === 'file') {
+      const file = state.file;
+      const buffer = await file.arrayBuffer();
+      const sha256 = await sha256Buffer(buffer);
+      let phash = null;
+      const imgFile = isImageFile(file);
+      if (imgFile) phash = await computePHash(file);
+
+      state.results = {
+        sourceType: 'File',
+        sourceName: file.name,
+        fileSize: formatSize(file.size),
+        fileType: file.type || 'Unknown',
+        sha256,
+        phash,
+        isImage: imgFile,
+      };
+
+    } else if (state.mode === 'text') {
+      const text = state.text.trim();
+      const sha256 = await sha256String(text);
+      const preview = text.length > 60 ? text.slice(0, 60) + '...' : text;
+      state.results = {
+        sourceType: 'Text string',
+        sourceName: preview,
+        sha256,
+        phash: null,
+        isImage: false,
+      };
+
+    } else if (state.mode === 'url') {
+      const url = state.url.trim();
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+      let responseText;
+      try {
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error('Fetch failed');
+        responseText = await response.text();
+      } catch (e) {
+        throw new Error('Could not fetch URL content. The site may block external requests. Hash the downloaded file directly instead.');
+      }
+      const sha256 = await sha256String(responseText);
+      state.results = {
+        sourceType: 'URL content',
+        sourceName: url,
+        sha256,
+        phash: null,
+        isImage: false,
+      };
+    }
+
+    state.loading = false;
+    render();
+
+  } catch (e) {
+    state.loading = false;
+    state.error = e.message || 'An error occurred. Please try again.';
+    state.results = null;
+    render();
+  }
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function resetTool() {
+  state = { mode: state.mode, file: null, text: '', url: '', results: null, loading: false, error: null };
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
