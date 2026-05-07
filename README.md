@@ -62,4 +62,4 @@ MIT. See `LICENSE`.
 
 ## Maintainer
 
-Derek Bowler · Signal & Shadow · Versoix, Geneva
+Signal & Shadow · 
